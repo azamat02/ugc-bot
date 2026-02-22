@@ -1,0 +1,7 @@
+node_modules
+dist
+admin-panel/node_modules
+admin-panel/dist
+.env
+*.tsbuildinfo
+.git
