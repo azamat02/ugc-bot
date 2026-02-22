@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Creator {
+  id            Int               @id @default(autoincrement())
+  telegramId    BigInt            @unique
+  username      String?
+  name          String
+  gender        String            // male / female
+  age           Int
+  phone         String            // WhatsApp
+  telegramNick  String
+  instagram     String?
+  tiktok        String?
+  photoFileId   String            // Telegram file_id фото
+  editingSkill  String            // pro / medium / beginner
+  hasExperience Boolean
+  createdAt     DateTime          @default(now())
+  responses     ProjectResponse[]
+}
+
+model Company {
+  id              Int       @id @default(autoincrement())
+  telegramId      BigInt    @unique
+  companyName     String
+  niche           String    // бытовая_техника / уходовая_косметика / ...
+  productDesc     String
+  socialLinks     String
+  instagram       String?
+  tiktok          String?
+  creatorReqs     String    // Требования к креаторам
+  conditions      String    // Условия
+  successCriteria String    // Критерии успеха
+  status          String    @default("pending") // pending / approved / rejected
+  createdAt       DateTime  @default(now())
+  projects        Project[]
+}
+
+model Project {
+  id          Int               @id @default(autoincrement())
+  companyId   Int
+  company     Company           @relation(fields: [companyId], references: [id])
+  title       String
+  description String
+  status      String            @default("active") // active / closed
+  createdAt   DateTime          @default(now())
+  responses   ProjectResponse[]
+}
+
+model ProjectResponse {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  project   Project  @relation(fields: [projectId], references: [id])
+  creatorId Int
+  creator   Creator  @relation(fields: [creatorId], references: [id])
+  status    String   @default("pending") // pending / accepted / rejected
+  createdAt DateTime @default(now())
+}
+
+model Admin {
+  id           Int         @id @default(autoincrement())
+  username     String      @unique
+  passwordHash String
+  telegramId   BigInt?
+  broadcasts   Broadcast[]
+}
+
+model Broadcast {
+  id                 Int       @id @default(autoincrement())
+  text               String
+  mediaFileId        String?
+  mediaType          String?   // "photo" | "video"
+  targetAudience     String    // "creators" | "companies" | "all"
+  filterGender       String?
+  filterEditingSkill String?
+  filterHasExperience Boolean?
+  filterNiche        String?
+  filterStatus       String?
+  status             String    @default("draft") // draft | scheduled | sending | sent | failed
+  scheduledAt        DateTime?
+  sentAt             DateTime?
+  totalRecipients    Int       @default(0)
+  deliveredCount     Int       @default(0)
+  failedCount        Int       @default(0)
+  createdBy          Int
+  admin              Admin     @relation(fields: [createdBy], references: [id])
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}

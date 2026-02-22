@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.js.map
+admin-panel/node_modules/
+admin-panel/dist/
+*.tsbuildinfo
