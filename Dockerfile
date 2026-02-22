@@ -8,6 +8,7 @@ RUN npm run build
 
 # --- Stage 2: Build backend ---
 FROM node:20-alpine AS backend
+RUN apk add --no-cache openssl
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -19,6 +20,7 @@ RUN npm run build
 
 # --- Stage 3: Production ---
 FROM node:20-alpine
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package.json package-lock.json ./
