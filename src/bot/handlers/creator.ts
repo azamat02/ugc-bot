@@ -9,6 +9,7 @@ import {
 } from "../keyboards";
 import { prisma } from "../../db/prisma";
 import { notifyAdminsNewCreator } from "../../admin/telegram";
+import { updateUserStep } from "../../db/userStep";
 
 type MyContext = Context & ConversationFlavor;
 type MyConversation = Conversation<MyContext>;
@@ -28,19 +29,21 @@ export async function creatorConversation(
   ctx: MyContext
 ) {
   const chatId = ctx.chat!.id;
+  const telegramUserId = ctx.from!.id;
   // Auto-get Telegram username
   const telegramNick = ctx.from!.username
     ? `@${ctx.from!.username}`
     : ctx.from!.first_name;
   const username = ctx.from!.username || null;
 
-  // 1. Имя
+  // 1. Имя (step already set to creator:name when role was selected)
   const q1 = await ctx.reply("📝 Введите ваше имя:");
   const nameCtx = await conversation.waitFor("message:text");
   const name = nameCtx.message!.text;
   await deleteMessages(ctx, [q1.message_id, nameCtx.message!.message_id]);
 
   // 2. Пол
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:gender"));
   const q2 = await ctx.reply("👤 Выберите ваш пол:", {
     reply_markup: genderKeyboard,
   });
@@ -50,6 +53,7 @@ export async function creatorConversation(
   await deleteMessages(ctx, [q2.message_id]);
 
   // 3. Возраст
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:age"));
   const q3 = await ctx.reply("🎂 Введите ваш возраст:");
   let age: number;
   const ageTrash: number[] = [];
@@ -69,7 +73,15 @@ export async function creatorConversation(
   }
   await deleteMessages(ctx, [q3.message_id, ...ageTrash]);
 
-  // 4. Телефон (через нативную кнопку "Поделиться контактом")
+  // 4. Город
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:city"));
+  const q3c = await ctx.reply("📍 Из какого вы города?");
+  const cityCtx = await conversation.waitFor("message:text");
+  const city = cityCtx.message!.text.trim();
+  await deleteMessages(ctx, [q3c.message_id, cityCtx.message!.message_id]);
+
+  // 5. Телефон (через нативную кнопку "Поделиться контактом")
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:phone"));
   const q4 = await ctx.reply(
     "📱 Поделитесь вашим номером телефона (WhatsApp):",
     { reply_markup: sharePhoneKeyboard }
@@ -83,7 +95,8 @@ export async function creatorConversation(
   });
   await deleteMessages(ctx, [removeKb.message_id]);
 
-  // 5. Instagram
+  // 6. Instagram
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:instagram"));
   const q5 = await ctx.reply(
     "📸 Введите ваш никнейм в Instagram:\n\nНапример: daniya_yess"
   );
@@ -91,7 +104,8 @@ export async function creatorConversation(
   const instagram = igCtx.message!.text.trim().replace(/^@/, "");
   await deleteMessages(ctx, [q5.message_id, igCtx.message!.message_id]);
 
-  // 6. TikTok
+  // 7. TikTok
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:tiktok"));
   const q6 = await ctx.reply(
     "🎵 Введите ваш никнейм в TikTok:\n\nНапример: daniya_yess"
   );
@@ -99,14 +113,16 @@ export async function creatorConversation(
   const tiktok = ttCtx.message!.text.trim().replace(/^@/, "");
   await deleteMessages(ctx, [q6.message_id, ttCtx.message!.message_id]);
 
-  // 7. Фото
+  // 8. Фото
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:photo"));
   const q7 = await ctx.reply("📷 Отправьте ваше фото:\n\n⚠️ Отправьте фото где хорошо видно ваше лицо");
   const photoCtx = await conversation.waitFor("message:photo");
   const photoFileId =
     photoCtx.message!.photo![photoCtx.message!.photo!.length - 1].file_id;
   await deleteMessages(ctx, [q7.message_id, photoCtx.message!.message_id]);
 
-  // 8. Навыки монтажа
+  // 9. Навыки монтажа
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:editing_skill"));
   const q8 = await ctx.reply("🎬 Ваш уровень навыков монтажа:", {
     reply_markup: editingSkillKeyboard,
   });
@@ -115,7 +131,8 @@ export async function creatorConversation(
   await skillCtx.answerCallbackQuery();
   await deleteMessages(ctx, [q8.message_id]);
 
-  // 9. Опыт UGC
+  // 10. Опыт UGC
+  await conversation.external(() => updateUserStep(telegramUserId, "creator:experience"));
   const q9 = await ctx.reply("💼 Есть ли у вас опыт в UGC?", {
     reply_markup: experienceKeyboard,
   });
@@ -132,6 +149,7 @@ export async function creatorConversation(
       name,
       gender,
       age,
+      city,
       phone,
       telegramNick,
       instagram,
@@ -141,6 +159,8 @@ export async function creatorConversation(
       hasExperience,
     },
   });
+
+  await conversation.external(() => updateUserStep(telegramUserId, "completed"));
 
   await ctx.reply(
     "✅ Спасибо! Приняли вашу анкету.\n\n" +

@@ -6,6 +6,8 @@ interface Stats {
   companies: number;
   pending: number;
   projects: number;
+  totalUsers: number;
+  incompleteUsers: number;
 }
 
 export default function Dashboard() {
@@ -14,29 +16,39 @@ export default function Dashboard() {
     companies: 0,
     pending: 0,
     projects: 0,
+    totalUsers: 0,
+    incompleteUsers: 0,
   });
 
   useEffect(() => {
     async function load() {
-      const [creatorsRes, companiesRes, pendingRes, projectsRes] =
+      const [creatorsRes, companiesRes, pendingRes, projectsRes, usersRes] =
         await Promise.all([
           api.get("/creators"),
           api.get("/companies"),
           api.get("/companies?status=pending"),
           api.get("/projects"),
+          api.get("/users"),
         ]);
+
+      const allUsers = usersRes.data as { registrationStep: string }[];
+      const incomplete = allUsers.filter((u) => u.registrationStep !== "completed").length;
 
       setStats({
         creators: creatorsRes.data.length,
         companies: companiesRes.data.length,
         pending: pendingRes.data.length,
         projects: projectsRes.data.length,
+        totalUsers: allUsers.length,
+        incompleteUsers: incomplete,
       });
     }
     load();
   }, []);
 
   const cards = [
+    { label: "Пользователи", value: stats.totalUsers, color: "bg-indigo-500" },
+    { label: "Не завершили", value: stats.incompleteUsers, color: "bg-red-500" },
     { label: "Креаторы", value: stats.creators, color: "bg-blue-500" },
     { label: "Компании", value: stats.companies, color: "bg-green-500" },
     { label: "На модерации", value: stats.pending, color: "bg-yellow-500" },
@@ -46,7 +58,7 @@ export default function Dashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {cards.map((card) => (
           <div
             key={card.label}

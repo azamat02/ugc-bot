@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 
 const links = [
   { to: "/", label: "Dashboard" },
+  { to: "/users", label: "Пользователи" },
   { to: "/creators", label: "Креаторы" },
   { to: "/companies", label: "Компании" },
   { to: "/moderation", label: "Модерация" },

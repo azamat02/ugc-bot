@@ -11,6 +11,7 @@ import { companyConversation } from "./handlers/company";
 import { handleModeration, handleProjectResponse } from "../admin/telegram";
 import { handleBrowseCreators, handleBrowseNav } from "./handlers/browse";
 import { companyMenuKeyboard } from "./keyboards";
+import { upsertUser, updateUserStep } from "../db/userStep";
 
 type MyContext = Context & ConversationFlavor;
 
@@ -68,6 +69,7 @@ export function createBot(token: string) {
   // Role selection callbacks — удаляем приветствие и входим в анкету
   bot.callbackQuery("role:creator", async (ctx) => {
     await ctx.answerCallbackQuery();
+    await upsertUser(ctx.from!.id, { role: "creator", registrationStep: "creator:name" });
     // Удаляем приветственное сообщение с кнопками
     const greetingId = (ctx as any).session?.greetingMessageId;
     if (greetingId) {
@@ -80,6 +82,7 @@ export function createBot(token: string) {
 
   bot.callbackQuery("role:company", async (ctx) => {
     await ctx.answerCallbackQuery();
+    await upsertUser(ctx.from!.id, { role: "company", registrationStep: "company:company_name" });
     const greetingId = (ctx as any).session?.greetingMessageId;
     if (greetingId) {
       try {
@@ -92,6 +95,7 @@ export function createBot(token: string) {
   // Company refill callback
   bot.callbackQuery("company:refill", async (ctx) => {
     await ctx.answerCallbackQuery();
+    await updateUserStep(ctx.from!.id, "company:company_name");
     await ctx.conversation.enter("companyConversation");
   });
 

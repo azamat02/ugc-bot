@@ -7,6 +7,7 @@ import companiesRoutes from "./routes/companies";
 import projectsRoutes from "./routes/projects";
 import photoRoutes from "./routes/photo";
 import broadcastsRoutes from "./routes/broadcasts";
+import usersRoutes from "./routes/users";
 
 export function createApi() {
   const app = express();
@@ -21,6 +22,7 @@ export function createApi() {
   app.use("/api/projects", projectsRoutes);
   app.use("/api/photo", photoRoutes);
   app.use("/api/broadcasts", broadcastsRoutes);
+  app.use("/api/users", usersRoutes);
 
   // Health check
   app.get("/api/health", (_req, res) => {

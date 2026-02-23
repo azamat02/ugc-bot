@@ -1,5 +1,6 @@
 import { Context } from "grammy";
 import { roleKeyboard, companyMenuKeyboard } from "../keyboards";
+import { upsertUser } from "../../db/userStep";
 
 export function getCompanyMenuMessage(status: string) {
   if (status === "approved") {
@@ -20,9 +21,16 @@ export async function handleStart(ctx: Context) {
     } catch {}
   }
 
+  // Трекинг пользователя с момента /start
+  const telegramId = ctx.from!.id;
+  const username = ctx.from!.username || null;
+  const firstName = ctx.from!.first_name || null;
+
   if (registered) {
     const role = (ctx as any).userRole;
     const dbUser = (ctx as any).dbUser;
+
+    await upsertUser(telegramId, { username, firstName, registrationStep: "completed", role });
 
     if (role === "creator") {
       await ctx.reply(
@@ -35,6 +43,8 @@ export async function handleStart(ctx: Context) {
     }
     return;
   }
+
+  await upsertUser(telegramId, { username, firstName, registrationStep: "started" });
 
   await ctx.reply(
     "Привет!\n\n" +
@@ -55,6 +65,8 @@ export async function handleStart(ctx: Context) {
   const buttons = await ctx.reply("Выберите вашу роль:", {
     reply_markup: roleKeyboard,
   });
+
+  await upsertUser(telegramId, { registrationStep: "choosing_role" });
 
   // Сохраняем ID сообщения с кнопками чтобы удалить при выборе роли
   (ctx as any).session = (ctx as any).session || {};

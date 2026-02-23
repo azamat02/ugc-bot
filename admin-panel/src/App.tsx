@@ -6,6 +6,7 @@ import Creators from "./pages/Creators";
 import Companies from "./pages/Companies";
 import Moderation from "./pages/Moderation";
 import Broadcasts from "./pages/Broadcasts";
+import Users from "./pages/Users";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/users" element={<Users />} />
           <Route path="/creators" element={<Creators />} />
           <Route path="/companies" element={<Companies />} />
           <Route path="/moderation" element={<Moderation />} />
